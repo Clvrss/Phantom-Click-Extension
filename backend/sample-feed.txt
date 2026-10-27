@@ -1,0 +1,14 @@
+# Sample in the OpenPhish feed format: one URL per line. Made-up addresses for tests only.
+https://secure-login.evil-bank.xyz/verify/index.php
+https://secure-login.evil-bank.xyz/verify/step2.php
+https://fake-paypal-login.pages.dev/
+https://docs.google.com/forms/d/e/1FAIpQLSphishFORM/viewform
+https://pages.dev/some-page
+https://shop.hackedsite.org/wp-content/upgrade/gov/
+https://danieltolson.com/token3.php
+http://192.0.2.7/login.php
+https://rootonly-scam.com
+https://www.bigscam.net/a/b/login.html?x=1#frag
+https://www.bigscam.net/a/b/login.html?x=2
+not a url
+ftp://files.example.com/x

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Phantom Click</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="popup.css">
+  <script src="theme.js"></script>
+</head>
+<body>
+  <header class="top">
+    <img src="icons/icon48.png" alt="" class="logo" width="40" height="40">
+    <div>
+      <h1>Phantom Click</h1>
+      <p class="tagline">Check a link before you click it</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="card row">
+      <div class="grow">
+        <label for="toggle" class="title">Check links on this page</label>
+        <p id="pageHost" class="hint">&nbsp;</p>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="toggle" role="switch">
+        <span class="track"><span class="thumb"></span></span>
+        <span class="sr">Check links on this page</span>
+      </label>
+    </section>
+
+    <section class="card row">
+      <div class="grow">
+        <label for="labelToggle" class="title">Show status text on badges</label>
+        <p class="hint wrap">Turn off to show only the status logo.</p>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="labelToggle" role="switch" checked>
+        <span class="track"><span class="thumb"></span></span>
+        <span class="sr">Show status text on badges</span>
+      </label>
+    </section>
+
+    <section class="card">
+      <div class="rowhead">
+        <label for="transparency" class="title">Badge transparency</label>
+        <output id="transparencyOut" for="transparency" class="out">0%</output>
+      </div>
+      <input type="range" id="transparency" class="slider" min="0" max="80" step="5" value="0" aria-label="Badge transparency">
+      <p class="hint wrap">Drag right to make badges more see-through. A badge turns solid when you point at it.</p>
+    </section>
+
+    <section class="card row">
+      <div class="grow">
+        <label for="darkToggle" class="title">Dark mode</label>
+        <p class="hint wrap">Dark colors for this menu and the hover card.</p>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="darkToggle" role="switch">
+        <span class="track"><span class="thumb"></span></span>
+        <span class="sr">Dark mode</span>
+      </label>
+    </section>
+
+    <section class="card row">
+      <div class="grow">
+        <label for="urlvetToggle" class="title">Detailed analysis (URLvet)</label>
+        <p class="hint wrap">Used when you click a badge. That link's address is sent to URLvet.</p>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="urlvetToggle" role="switch" checked>
+        <span class="track"><span class="thumb"></span></span>
+        <span class="sr">Detailed analysis with URLvet</span>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2 class="title">Excluded sites</h2>
+      <p class="hint">Links are not checked on these sites.</p>
+      <form id="excludeForm" class="inline" novalidate>
+        <input id="excludeInput" type="text" placeholder="Enter domain / URL" autocomplete="off" spellcheck="false" aria-label="Domain or URL to exclude">
+        <button type="submit" class="btn">Submit</button>
+      </form>
+      <p id="formMsg" class="msg" role="status"></p>
+      <ul id="excludeList" class="chips"></ul>
+    </section>
+
+    <p class="note"><span aria-hidden="true">&#9432;</span> Only supported HTML links are checked. Buttons, image-only links and downloads are not.</p>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

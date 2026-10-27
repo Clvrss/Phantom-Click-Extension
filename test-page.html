@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phantom Click — Link Test Page</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      max-width: 1040px; margin: 0 auto; padding: 28px 18px 56px;
+      font: 16px/1.55 system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    h1 { line-height: 1.2; }
+    section { margin-top: 28px; }
+    .notice { border: 1px solid #9997; border-radius: 10px; padding: 12px 14px; }
+    .case-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(285px, 1fr)); gap: 12px; }
+    .case { border: 1px solid #9997; border-radius: 10px; padding: 14px; min-width: 0; }
+    .case h3 { margin: 0 0 5px; font-size: 1rem; }
+    .meta { font-size: .9rem; opacity: .85; margin-top: 4px; }
+    .expect { font-size: .92rem; margin-top: 6px; }
+    .expect b { font-weight: 650; }
+    a.test-link { display: inline-block; overflow-wrap: anywhere; margin-top: 8px; }
+    code { overflow-wrap: anywhere; }
+    button { padding: 9px 12px; cursor: pointer; }
+    .tag { display: inline-block; border: 1px solid #9997; border-radius: 5px; padding: 1px 6px; font-size: .78rem; margin-bottom: 6px; }
+
+    /* custom checker */
+    .checker { border: 2px solid #4f46e5; border-radius: 12px; padding: 16px; }
+    .checker form { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+    .checker input[type=text] { flex: 1 1 320px; min-width: 0; padding: 10px 12px; font: inherit; border: 1px solid #9998; border-radius: 8px; }
+    .checker select { padding: 9px 8px; font: inherit; border-radius: 8px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+    .chips button { padding: 4px 9px; font-size: .82rem; border-radius: 999px; border: 1px solid #9998; background: transparent; color: inherit; }
+    .msg { min-height: 1.3em; font-size: .88rem; color: #b45309; margin: 4px 0 0; }
+    #custom-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 6px; }
+    #custom-list li { display: flex; align-items: center; gap: 10px; border: 1px solid #9997; border-radius: 8px; padding: 6px 10px; }
+    #custom-list li a { flex: 1; min-width: 0; margin: 0; }
+    #custom-list li button { padding: 3px 8px; font-size: .8rem; }
+    .counter { font-variant-numeric: tabular-nums; }
+    footer { margin-top: 36px; opacity: .8; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <h1>Phantom Click — Link Test Page</h1>
+  <p>Test links for the Phantom Click extension (v1.4). Every “Expected” line below was calculated with the extension’s own rules and the default lists in <code>lists/</code>, so it should match what you see. Hover a badge to open its card and compare the rules, score and notes.</p>
+
+  <div class="notice">
+    <strong>How to read the results</strong>
+    <ul>
+      <li><b>Score</b> is the sum of the matched rules (R-01 25, R-02 25, R-03 30, R-04 50, R-05 55, R-06 60, R-07 60), capped at 100. A High rule (R-04 to R-07) raises the score to at least 51. Safe 0–20, Warning 21–50, Risky 51–100.</li>
+      <li><b><code>.example</code> links:</b> this ending is reserved and never resolves, so the extension always adds R-02 (+25), and after the check the card also says “Couldn't check this link. Be careful.” A failed check never lowers the score: it is at least 25.</li>
+      <li><b>Internet needed</b> for links to real sites (<code>example.com</code>, <code>google.com</code> and so on). Offline, they become Warning (couldn't check).</li>
+      <li>Serve this page over http (<code>python -m http.server 8000</code>, then open <code>http://localhost:8000/test-page.html</code>). Opened as a file, Chrome needs “Allow access to file URLs” for the extension.</li>
+      <li>Test clicks never navigate away. Reload the extension and refresh the page after editing <code>lists/known-safe.txt</code> or <code>lists/known-phishing.txt</code>.</li>
+    </ul>
+  </div>
+
+  <!-- ===================================================== 0. custom -->
+  <section>
+    <h2>Check your own link</h2>
+    <div class="checker">
+      <div>Type or paste a domain or a full address. It is added below as a real link, so Phantom Click puts a badge on it. Use <code>.example</code> names to avoid contacting real sites. Use <code>javascript:void(0)</code> or <code>data:…</code> to test unsupported schemes.</div>
+      <form id="custom-form" autocomplete="off">
+        <input id="custom-input" type="text" placeholder="example.com, shop.example.com/login, https://… or several separated by spaces" aria-label="Domain or address to check" spellcheck="false">
+        <select id="custom-scheme" aria-label="Scheme to use when none is typed">
+          <option value="https://">https://</option>
+          <option value="http://">http://</option>
+        </select>
+        <button type="submit">Add link</button>
+        <button type="button" id="custom-clear">Clear all</button>
+      </form>
+      <div class="msg" id="custom-msg" role="status"></div>
+      <div class="meta">Quick examples (click to fill):</div>
+      <div class="chips" id="chips"></div>
+      <ul id="custom-list" aria-live="polite"></ul>
+    </div>
+  </section>
+
+  <!-- ===================================================== 1. single rules -->
+  <section>
+    <h2>1. Single-rule test links</h2>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">Baseline</span>
+        <h3>Clean HTTPS URL</h3>
+        <div class="expect"><b>Rules:</b> none · <b>Score:</b> 0 · <b>Badge:</b> Safe</div>
+        <div class="meta">Needs internet. The site answers, so nothing is flagged.</div>
+        <a class="test-link" data-test="baseline" href="https://example.com/">https://example.com/</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-01</span>
+        <h3>HTTP instead of HTTPS</h3>
+        <div class="expect"><b>Rules:</b> R-01 · <b>Score:</b> 25 · <b>Badge:</b> Warning</div>
+        <div class="meta">The site redirects to HTTPS, but R-01 is kept because the first request was unencrypted.</div>
+        <a class="test-link" data-test="R-01" href="http://example.com/">http://example.com/</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-02</span>
+        <h3>Unfamiliar domain</h3>
+        <div class="expect"><b>Rules:</b> R-02 · <b>Score:</b> 25 · <b>Badge:</b> Warning</div>
+        <div class="meta">Reason shown in the card: “.example is not a real public domain ending”. Unreachable, so the card also says it couldn't be checked.</div>
+        <a class="test-link" data-test="R-02" href="https://unfamiliar-domain.phantom-test.example/login">https://unfamiliar-domain.phantom-test.example/login</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-03</span>
+        <h3>Unusual URL structure</h3>
+        <div class="expect"><b>Rules:</b> R-03 · <b>Score:</b> 30 · <b>Badge:</b> Warning</div>
+        <div class="meta">Repeated slashes in the path. Words like “account” or “verify” are avoided here on purpose, because they would also trigger R-05. The server answers with an error status, so the card notes that only the address was checked.</div>
+        <a class="test-link" data-test="R-03" href="https://example.com//docs///page?continue=%2Fhome">https://example.com//docs///page?continue=%2Fhome</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-03</span>
+        <h3>Raw IP address</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-03 · <b>Score:</b> 55 · <b>Badge:</b> Risky</div>
+        <div class="meta">203.0.113.0/24 is a documentation range and never answers, so the check fails after a few seconds. The score stays 55.</div>
+        <a class="test-link" data-test="R-03-ip" href="https://203.0.113.10/offer">https://203.0.113.10/offer</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-04</span>
+        <h3>Lookalike / misspelled domain</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-04 · <b>Score:</b> 75 · <b>Badge:</b> Risky</div>
+        <div class="meta">“steann” looks like “steam” (nn reads as m). R-04 alone would be 50, raised to 51; the reserved .example ending adds R-02 (+25).</div>
+        <a class="test-link" data-test="R-04" href="https://steann.example/login">https://steann.example/login</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-04</span>
+        <h3>Digit-for-letter lookalike</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-04 · <b>Score:</b> 75 · <b>Badge:</b> Risky</div>
+        <div class="meta">“g00gle” becomes “google” once 0 is read as o.</div>
+        <a class="test-link" data-test="R-04-digits" href="https://g00gle.example/">https://g00gle.example/</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-05</span>
+        <h3>Suspicious path / keywords</h3>
+        <div class="expect"><b>Rules:</b> R-05 · <b>Score:</b> 55 · <b>Badge:</b> Risky</div>
+        <div class="meta">“verify” and “suspended” are strong scam words. The server answers with an error status, so the card notes that only the address was checked.</div>
+        <a class="test-link" data-test="R-05" href="https://example.com/login-verify/account-suspended">https://example.com/login-verify/account-suspended</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-06</span>
+        <h3>Suspicious subdomain</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-06 · <b>Score:</b> 85 · <b>Badge:</b> Risky</div>
+        <div class="meta">“login” and “verify” in front of an unfamiliar site.</div>
+        <a class="test-link" data-test="R-06" href="https://login-verify.account.example/">https://login-verify.account.example/</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-06</span>
+        <h3>Brand name in front of another domain</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-06 · <b>Score:</b> 85 · <b>Badge:</b> Risky</div>
+        <div class="meta">“paypal.com” appears before the real domain, <code>secure-check.example</code>.</div>
+        <a class="test-link" data-test="R-06-brand" href="https://paypal.com.secure-check.example/">https://paypal.com.secure-check.example/</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-07</span>
+        <h3>Known phishing-list match</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-07 · <b>Score:</b> 85 · <b>Badge:</b> Risky</div>
+        <div class="meta">Matches because <code>phishing-test.example</code> is in <code>lists/known-phishing.txt</code>. Delete that line, reload the extension, and the R-07 part disappears (score drops to 25).</div>
+        <a class="test-link" data-test="R-07" href="https://phishing-test.example/">https://phishing-test.example/</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-03</span>
+        <h3>Disguised international name</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-03 · <b>Score:</b> 55 · <b>Badge:</b> Risky</div>
+        <div class="meta">An <code>xn--</code> (punycode) name can hide look-alike letters.</div>
+        <a class="test-link" data-test="R-03-punycode" href="https://xn--80ak6aa92e.com/">https://xn--80ak6aa92e.com/</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================================================== 2. combined -->
+  <section>
+    <h2>2. Combined-score tests</h2>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">R-01 + R-02</span>
+        <h3>Two medium indicators</h3>
+        <div class="expect"><b>Rules:</b> R-01 + R-02 · <b>Score:</b> 25 + 25 = 50 · <b>Badge:</b> Warning</div>
+        <a class="test-link" data-test="combo-medium" href="http://unfamiliar-domain.phantom-test.example/login">http://unfamiliar-domain.phantom-test.example/login</a>
+      </article>
+      <article class="case">
+        <span class="tag">Capped at 100</span>
+        <h3>Several indicators together</h3>
+        <div class="expect"><b>Rules:</b> R-01 + R-02 + R-04 + R-05 · <b>Score:</b> 25 + 25 + 50 + 55 = 155, shown as 100 · <b>Badge:</b> Risky</div>
+        <a class="test-link" data-test="combo-cap" href="http://steann.example/login-verify/account-suspended">http://steann.example/login-verify/account-suspended</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-03 + R-05</span>
+        <h3>Structure and keywords</h3>
+        <div class="expect"><b>Rules:</b> R-03 + R-05 · <b>Score:</b> 30 + 55 = 85 · <b>Badge:</b> Risky</div>
+        <div class="meta">The repeated slashes trigger R-03, and “account” with “verify” triggers R-05.</div>
+        <a class="test-link" data-test="combo-structure" href="https://example.com//account///verify?continue=%2Flogin">https://example.com//account///verify?continue=%2Flogin</a>
+      </article>
+      <article class="case">
+        <span class="tag">Medium + High</span>
+        <h3>Unfamiliar site with scam words</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-05 · <b>Score:</b> 25 + 55 = 80 · <b>Badge:</b> Risky</div>
+        <a class="test-link" data-test="combo-keywords" href="https://bank-login.example/verify">https://bank-login.example/verify</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================================================== 3. trusted -->
+  <section>
+    <h2>3. Trusted domains (should stay Safe)</h2>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">Known list</span>
+        <h3>Well-known site</h3>
+        <div class="expect"><b>Rules:</b> none · <b>Score:</b> 0 · <b>Badge:</b> Safe</div>
+        <a class="test-link" data-test="trusted-google" href="https://www.google.com/search?q=cats">https://www.google.com/search?q=cats</a>
+      </article>
+      <article class="case">
+        <span class="tag">Country domain</span>
+        <h3>Known brand on a country domain</h3>
+        <div class="expect"><b>Rules:</b> none · <b>Score:</b> 0 · <b>Badge:</b> Safe</div>
+        <a class="test-link" data-test="trusted-country" href="https://www.google.co.id/">https://www.google.co.id/</a>
+      </article>
+      <article class="case">
+        <span class="tag">Institution</span>
+        <h3>.ac.id site with “login” and “update” in the path</h3>
+        <div class="expect"><b>Rules:</b> none · <b>Score:</b> 0 · <b>Badge:</b> Safe</div>
+        <div class="meta">Institution endings (.ac.id, .go.id, .edu, .gov and others) are trusted, so R-02 and R-05 are skipped.</div>
+        <a class="test-link" data-test="trusted-institution" href="https://it.telkomuniversity.ac.id/wa-web/login-update">https://it.telkomuniversity.ac.id/wa-web/login-update</a>
+      </article>
+    </div>
+    <p class="meta">To test your own list: add a domain to <code>lists/known-safe.txt</code>, reload the extension, refresh this page, then add that domain in “Check your own link”.</p>
+  </section>
+
+  <!-- ===================================================== 4. schemes -->
+  <section>
+    <h2>4. URL-scheme handling</h2>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">FR-06</span>
+        <h3>JavaScript scheme</h3>
+        <div class="expect"><b>Badge:</b> Warning · <b>Score:</b> 25 · not fetched</div>
+        <div class="meta">The card says “Couldn't check this link. Be careful.”</div>
+        <a class="test-link" data-test="scheme-javascript" href="javascript:void(0)">javascript:void(0)</a>
+      </article>
+      <article class="case">
+        <span class="tag">FR-06</span>
+        <h3>File scheme</h3>
+        <div class="expect"><b>Badge:</b> Warning · <b>Score:</b> 25 · not fetched</div>
+        <a class="test-link" data-test="scheme-file" href="file:///C:/phantom-click-test.txt">file:///C:/phantom-click-test.txt</a>
+      </article>
+      <article class="case">
+        <span class="tag">FR-06</span>
+        <h3>Data scheme</h3>
+        <div class="expect"><b>Badge:</b> Warning · <b>Score:</b> 25 · not fetched</div>
+        <a class="test-link" data-test="scheme-data" href="data:text/plain,Phantom%20Click%20test">data:text/plain,Phantom%20Click%20test</a>
+      </article>
+      <article class="case">
+        <span class="tag">FR-07</span>
+        <h3>Email link</h3>
+        <div class="expect"><b>Badge:</b> none</div>
+        <a class="test-link" data-test="scheme-mailto" href="mailto:phantom-click-test@example.com">mailto:phantom-click-test@example.com</a>
+      </article>
+      <article class="case">
+        <span class="tag">FR-07</span>
+        <h3>Telephone link</h3>
+        <div class="expect"><b>Badge:</b> none</div>
+        <a class="test-link" data-test="scheme-tel" href="tel:+10000000000">tel:+10000000000</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================================================== 5. scope -->
+  <section>
+    <h2>5. Links that should NOT get a badge, and duplicates</h2>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">FR-38</span>
+        <h3>Same-site link</h3>
+        <div class="expect"><b>Badge:</b> none</div>
+        <div class="meta">Points to this same site.</div>
+        <a class="test-link" data-test="same-site" href="/local-page">/local-page</a>
+      </article>
+      <article class="case">
+        <span class="tag">FR-02</span>
+        <h3>Page anchor</h3>
+        <div class="expect"><b>Badge:</b> none</div>
+        <a class="test-link" data-test="hash" href="#top">#top</a>
+      </article>
+      <article class="case">
+        <span class="tag">FR-04</span>
+        <h3>Image-only link</h3>
+        <div class="expect"><b>Badge:</b> none</div>
+        <div class="meta">A link with no visible text is out of scope.</div>
+        <a class="test-link" data-test="image-only" href="https://example.com/" aria-label="Image link"><img alt="" width="44" height="44" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' rx='8' fill='%234f46e5'/%3E%3C/svg%3E"></a>
+      </article>
+      <article class="case">
+        <span class="tag">FR-04</span>
+        <h3>Plain-text URL and button</h3>
+        <div class="expect"><b>Badge:</b> none</div>
+        <div class="meta">Plain text: https://phishing-test.example/ (not an HTML link)</div>
+        <button type="button" onclick="return false">Button (not a link)</button>
+      </article>
+      <article class="case">
+        <span class="tag">FR-39</span>
+        <h3>Two links to one destination</h3>
+        <div class="expect"><b>Badge:</b> one (R-02 · 25 · Warning)</div>
+        <div class="meta">While the first badge is visible, the second one stays hidden.</div>
+        <p style="margin:8px 0 0"><a class="test-link" data-test="dup-1" href="https://unfamiliar-domain.phantom-test.example/promo">Spring offer</a> — see all the details of this offer, then <a class="test-link" data-test="dup-2" href="https://unfamiliar-domain.phantom-test.example/promo">Read more</a></p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================================================== 6. block -->
+  <section>
+    <h2>6. Block URL</h2>
+    <p>Hover a badge, press <b>Block URL</b>, then click the link. Blocking works for Warning and Risky links.</p>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">FR-33</span>
+        <h3>Warning link</h3>
+        <div class="expect"><b>Rules:</b> R-02 · <b>Score:</b> 25 · <b>Badge:</b> Warning</div>
+        <a class="test-link" data-test="block-warning" data-count="block-warning" href="https://block-test.phantom-test.example/">https://block-test.phantom-test.example/</a>
+        <div class="meta">Clicks that reached the page: <b class="counter" id="count-block-warning">0</b></div>
+      </article>
+      <article class="case">
+        <span class="tag">FR-33</span>
+        <h3>Risky link</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-07 · <b>Score:</b> 85 · <b>Badge:</b> Risky</div>
+        <a class="test-link" data-test="block-risky" data-count="block-risky" href="https://phishing-test.example/gift">https://phishing-test.example/gift</a>
+        <div class="meta">Clicks that reached the page: <b class="counter" id="count-block-risky">0</b></div>
+      </article>
+    </div>
+    <p class="meta"><b>Expected:</b> before blocking, each click raises the counter. After blocking, the badge reads “· Blocked”, the badge shakes on a click, and the counter stays the same (also with the middle button and the keyboard). After Unblock URL, clicks count again. A blocked link stays blocked after a reload.</p>
+  </section>
+
+  <!-- ===================================================== 7. dynamic -->
+  <section>
+    <h2>7. Dynamic links</h2>
+    <p>New and changed links should get a badge within about a second, without refreshing the page.</p>
+    <div class="case-grid">
+      <article class="case">
+        <h3>Add a new link</h3>
+        <div class="expect"><b>Expected:</b> each new link gets R-02 · 25 · Warning</div>
+        <button id="add-link" type="button">Add a dynamic test link</button>
+        <div id="dynamic-area" aria-live="polite"></div>
+      </article>
+      <article class="case">
+        <h3>Change a link's address</h3>
+        <div class="expect"><b>State A:</b> https://example.com/ · Safe 0</div>
+        <div class="expect"><b>State B:</b> http://secure-login-update.example/verify · R-01 + R-02 + R-05 = 105, shown as 100 · Risky</div>
+        <button id="change-link" type="button">Switch address</button>
+        <div><a class="test-link" id="changing-link" data-test="change-href" href="https://example.com/">https://example.com/</a></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================================================== 8. redirects -->
+  <section>
+    <h2>8. Redirect resolution</h2>
+    <p class="notice">These need internet access. A network error or timeout shows Warning (at least 25), never Safe. A server that answers with an error status still counts as checked and adds a note.</p>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">Network test</span>
+        <h3>Redirect to example.com</h3>
+        <div class="expect"><b>Rules:</b> R-05 · <b>Score:</b> 55 · <b>Badge:</b> Risky</div>
+        <div class="meta">The card shows “Leads to example.com”. The address hides another web address in its query, which R-05 treats as a High finding, so it stays Risky even though the destination is clean. If the test site is down, the card says it couldn't be checked and the score stays 55.</div>
+        <a class="test-link" data-test="redirect-optional" href="https://httpbin.org/redirect-to?url=https%3A%2F%2Fexample.com%2F">https://httpbin.org/redirect-to?url=https%3A%2F%2Fexample.com%2F</a>
+      </article>
+      <article class="case">
+        <span class="tag">Short link</span>
+        <h3>Shortened link</h3>
+        <div class="expect"><b>Rules:</b> R-03 · <b>Score:</b> 30 · <b>Badge:</b> Warning</div>
+        <div class="meta">Shortened links hide their destination. After the redirect is followed, the final address is checked again, so the result can change. This sample code probably leads nowhere; use a short link you control for a full redirect test.</div>
+        <a class="test-link" data-test="shortener" href="https://bit.ly/3xyz">https://bit.ly/3xyz</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================================================== 9. v1.1 local rules -->
+  <section>
+    <h2>9. Brand names and free hosting platforms (v1.1)</h2>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">R-04</span>
+        <h3>Brand name on an ending it does not use</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-04 · <b>Score:</b> 75 · <b>Badge:</b> Risky</div>
+        <div class="meta">The exact name “steamcommunity” on an unrelated ending. Real brand domains on normal endings (.com, .net, .org, .dev, .app, .io) stay Safe. The reserved .example ending adds R-02.</div>
+        <a class="test-link" data-test="brand-ending" href="https://steamcommunity.example/gift/activation">https://steamcommunity.example/gift/activation</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-06</span>
+        <h3>Free page named after a brand</h3>
+        <div class="expect"><b>Rules:</b> R-06 · <b>Score:</b> 60 · <b>Badge:</b> Risky</div>
+        <div class="meta">Anyone can open a page on vercel.app, so a page called “netflix” there is judged by its name, not by the platform. Needs internet for a clean result; offline it also says it couldn't be checked.</div>
+        <a class="test-link" data-test="platform-brand" href="https://netflix.vercel.app/">https://netflix.vercel.app/</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-06</span>
+        <h3>Free page with login words</h3>
+        <div class="expect"><b>Rules:</b> R-06 · <b>Score:</b> 60 · <b>Badge:</b> Risky</div>
+        <a class="test-link" data-test="platform-login" href="https://login-help.github.io/">https://login-help.github.io/</a>
+      </article>
+      <article class="case">
+        <span class="tag">R-02</span>
+        <h3>Random-looking free page</h3>
+        <div class="expect"><b>Rules:</b> R-02 · <b>Score:</b> 25 · <b>Badge:</b> Warning</div>
+        <div class="meta">Many digits in the name of a free page.</div>
+        <a class="test-link" data-test="platform-random" href="https://x7k2m9-demo-4829.pages.dev/">https://x7k2m9-demo-4829.pages.dev/</a>
+      </article>
+      <article class="case">
+        <span class="tag">No false alarm</span>
+        <h3>Ordinary free page</h3>
+        <div class="expect"><b>Rules:</b> none · <b>Score:</b> 0 · <b>Badge:</b> Safe (if the page exists)</div>
+        <div class="meta">A plain name on a free platform is not flagged. If the page does not exist, the card also says it couldn't be checked.</div>
+        <a class="test-link" data-test="platform-plain" href="https://my-portfolio.github.io/">https://my-portfolio.github.io/</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================================================== 10. detailed analysis -->
+  <section>
+    <h2>10. Two-page card and detailed analysis (URLvet)</h2>
+    <ol>
+      <li>Open the Phantom Click toolbar menu and check that <b>Detailed analysis (URLvet)</b> is on. It uses URLvet's public server automatically; there is nothing to set up (it needs internet).</li>
+      <li><b>Hover</b> a badge below: page 1 appears at once and nothing is sent to URLvet.</li>
+      <li><b>Click the badge</b> (or press <b>More Detail analysis</b>): page 2 opens with a loading indicator, then URLvet's verdict, redirect chain and explanations. The badge itself does not change.</li>
+      <li><b>Previous Page</b> (or clicking the badge again) returns to page 1. <b>Esc</b> or a click elsewhere closes the card.</li>
+      <li>Turn the <b>Detailed analysis (URLvet)</b> switch off and open page 2 again: it says the analysis is turned off and nothing is sent. If URLvet cannot be reached (offline, or the public limit of about 20 requests a minute), the card says <b>Detailed analysis unavailable.</b> and offers <b>Try again</b>.</li>
+    </ol>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">URLvet</span>
+        <h3>Ordinary site</h3>
+        <div class="expect"><b>Page 1:</b> Safe · 0 · <b>Page 2:</b> URLvet verdict (typically Safe)</div>
+        <a class="test-link" data-test="urlvet-clean" href="https://example.org/">https://example.org/</a>
+      </article>
+      <article class="case">
+        <span class="tag">URLvet</span>
+        <h3>Redirecting link</h3>
+        <div class="expect"><b>Page 1:</b> Risky · 55 (hidden address in the link) · <b>Page 2:</b> redirect chain to example.com</div>
+        <a class="test-link" data-test="urlvet-redirect" href="https://httpbin.org/redirect-to?url=https%3A%2F%2Fexample.com%2F&amp;status_code=302">https://httpbin.org/redirect-to?url=https%3A%2F%2Fexample.com%2F&amp;status_code=302</a>
+      </article>
+      <article class="case">
+        <span class="tag">URLvet</span>
+        <h3>Unreachable site</h3>
+        <div class="expect"><b>Page 1:</b> Risky · 75 · <b>Page 2:</b> what URLvet could find (the site does not exist, so expect few details)</div>
+        <a class="test-link" data-test="urlvet-unreachable" href="https://steann.example/login">https://steann.example/login</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================================================== 11. images and buttons -->
+  <section>
+    <h2>11. Images and buttons (v1.2)</h2>
+    <p>Pictures that are links get their badge in the <b>top-right corner, inside the image</b>. Buttons that lead somewhere get theirs <b>right beside the button</b>. Phantom Click reads the address from the page's markup (a link around the picture, a form's <code>action</code>, a button's <code>formaction</code>, or an address written in <code>onclick</code>). Nothing is run, and clicks on this page's test buttons do nothing.</p>
+    <div class="case-grid">
+      <article class="case">
+        <span class="tag">Image link</span>
+        <h3>Large picture</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-04 · <b>Score:</b> 75 · <b>Badge:</b> Risky, top-right inside the picture</div>
+        <div class="meta">The card says “Image link” as the checked type.</div>
+        <a class="test-link" data-test="image-large" href="https://steann.example/login" aria-label="Large picture link"><img alt="" width="260" height="140" style="display:block;margin-top:8px;border-radius:8px" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='140'%3E%3Crect width='260' height='140' fill='%23e5e7eb'/%3E%3Ctext x='130' y='78' font-family='sans-serif' font-size='18' font-weight='bold' text-anchor='middle' fill='%23111'%3EIMAGE EXAMPLE%3C/text%3E%3C/svg%3E"></a>
+      </article>
+      <article class="case">
+        <span class="tag">Image link</span>
+        <h3>Small icon</h3>
+        <div class="expect"><b>Rules:</b> R-02 · <b>Score:</b> 25 · <b>Badge:</b> Warning, beside the icon</div>
+        <div class="meta">Pictures too small to hold a badge get it beside them instead.</div>
+        <a class="test-link" data-test="image-icon" href="https://unfamiliar-domain.phantom-test.example/icon" aria-label="Icon link"><img alt="" width="32" height="32" style="display:block;margin-top:8px" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' rx='6' fill='%234f46e5'/%3E%3C/svg%3E"></a>
+      </article>
+      <article class="case">
+        <span class="tag">Button</span>
+        <h3>Submit button of a form</h3>
+        <div class="expect"><b>Rules:</b> R-02 · <b>Score:</b> 25 · <b>Badge:</b> Warning, right beside the button</div>
+        <div class="meta">The form's <code>action</code> goes to another site.</div>
+        <form class="test-form" action="https://unfamiliar-domain.phantom-test.example/search" style="margin-top:8px"><input name="q" value="shoes" aria-label="Search"> <button class="test-btn" data-test="btn-form" type="submit">Search</button></form>
+      </article>
+      <article class="case">
+        <span class="tag">Button</span>
+        <h3>Button with formaction</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-04 · <b>Score:</b> 75 · <b>Badge:</b> Risky, right beside the button</div>
+        <button class="test-btn" data-test="btn-formaction" type="button" formaction="https://steann.example/go" style="margin-top:8px">Continue</button>
+      </article>
+      <article class="case">
+        <span class="tag">Button</span>
+        <h3>Button with an address in onclick</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-06 · <b>Score:</b> 85 · <b>Badge:</b> Risky, right beside the button</div>
+        <button class="test-btn" data-test="btn-onclick" onclick="location.href='https://login-verify.account.example/'" style="margin-top:8px">Open offer</button>
+      </article>
+      <article class="case">
+        <span class="tag">Button</span>
+        <h3>Input submit</h3>
+        <div class="expect"><b>Rules:</b> R-02 + R-07 · <b>Score:</b> 85 · <b>Badge:</b> Risky, right beside the button</div>
+        <form class="test-form" action="https://phishing-test.example/s" style="margin-top:8px"><input class="test-btn" data-test="btn-input" type="submit" value="Submit"></form>
+      </article>
+      <article class="case">
+        <span class="tag">No badge</span>
+        <h3>Buttons that stay on this site</h3>
+        <div class="expect"><b>Badge:</b> none</div>
+        <div class="meta">A form that submits to this same site, and a button with no address at all.</div>
+        <form class="test-form" action="/same-site" style="margin-top:8px"><button class="test-btn" data-test="btn-same-site" type="submit">Same-site form</button> <button class="test-btn" data-test="btn-plain" type="button">Plain button</button></form>
+      </article>
+    </div>
+    <p class="meta"><b>Toolbar settings:</b> turn off <i>Show status text on badges</i> in the Phantom Click menu and every badge on this page shrinks to just its status logo. Drag <i>Badge transparency</i> to make the badges see-through; a badge turns solid when you point at it. Switch <i>Dark mode</i> on to see the menu and the hover card in dark colors.</p>
+  </section>
+
+  <footer>
+    Test fixture only. The sample URLs are not a threat-intelligence feed and do not show whether any real website is safe. <code>.example</code> addresses are reserved for documentation and never resolve.
+  </footer>
+
+  <script>
+    // Test clicks must never navigate away or open other applications.
+    // Links with data-count also report clicks that actually reach the page.
+    document.addEventListener('click', function (event) {
+      if (event.target.closest('a.test-link')) event.preventDefault();
+    });
+    // The test buttons and forms never act: the extension reads their addresses from the markup only.
+    document.addEventListener('click', function (event) {
+      if (event.target.closest('.test-btn')) { event.preventDefault(); event.stopImmediatePropagation(); }
+    }, true);
+    document.querySelectorAll('form.test-form').forEach(function (f) { f.addEventListener('submit', function (e) { e.preventDefault(); }); });
+    document.querySelectorAll('[data-count]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        var n = document.getElementById('count-' + a.dataset.count);
+        n.textContent = String(Number(n.textContent) + 1);
+      });
+    });
+
+    // ---------- 7. dynamic links
+    var dynCount = 0;
+    document.getElementById('add-link').addEventListener('click', function () {
+      var area = document.getElementById('dynamic-area');
+      dynCount += 1;
+      var p = document.createElement('p');
+      var label = document.createElement('span');
+      label.textContent = 'Dynamic link ' + dynCount + ': ';
+      var link = document.createElement('a');
+      link.className = 'test-link';
+      link.dataset.test = 'dynamic-' + dynCount;
+      link.href = 'https://dynamic-' + dynCount + '.phantom-test.example/login';
+      link.textContent = link.href;
+      p.append(label, link);
+      area.appendChild(p);
+    });
+    var stateB = false;
+    document.getElementById('change-link').addEventListener('click', function () {
+      var a = document.getElementById('changing-link');
+      stateB = !stateB;
+      a.href = stateB ? 'http://secure-login-update.example/verify' : 'https://example.com/';
+      a.textContent = a.href;
+    });
+
+    // ---------- custom link checker
+    var KEY = 'phantom-click-test-custom';
+    var form = document.getElementById('custom-form');
+    var input = document.getElementById('custom-input');
+    var scheme = document.getElementById('custom-scheme');
+    var list = document.getElementById('custom-list');
+    var msg = document.getElementById('custom-msg');
+    var items = [];
+    var seq = 0;
+
+    function load() { try { items = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { items = []; } }
+    function save() { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) { /* storage blocked */ } }
+
+    // "example.com/login" -> "https://example.com/login"; full addresses and other schemes are kept as typed
+    var OTHER = /^(javascript|data|file|mailto|tel|blob|ftp|sms|ws|wss):/i;
+    function toUrl(token) {
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token) || OTHER.test(token)) return token;
+      if (token.indexOf('//') === 0) return 'https:' + token;
+      return scheme.value + token;
+    }
+
+    function render() {
+      list.textContent = '';
+      items.forEach(function (it) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.className = 'test-link';
+        a.dataset.test = 'custom-' + it.id;
+        a.href = it.url;
+        a.textContent = it.url;
+        var rm = document.createElement('button');
+        rm.type = 'button';
+        rm.textContent = 'Remove';
+        rm.addEventListener('click', function () {
+          items = items.filter(function (x) { return x.id !== it.id; });
+          save(); render();
+        });
+        li.append(a, rm);
+        list.appendChild(li);
+      });
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var tokens = input.value.split(/[\s,]+/).filter(Boolean);
+      msg.textContent = '';
+      if (!tokens.length) { msg.textContent = 'Type a domain or an address first.'; return; }
+      var added = 0, skipped = [];
+      tokens.forEach(function (t) {
+        var url = toUrl(t);
+        var ok = true;
+        try { new URL(url); } catch (err) { ok = false; }
+        if (!ok) { skipped.push(t); return; }
+        seq += 1;
+        items.push({ id: Date.now().toString(36) + seq, url: url });
+        added += 1;
+      });
+      if (added) { save(); render(); input.value = ''; }
+      if (skipped.length) msg.textContent = 'Not a valid address: ' + skipped.join(', ');
+      input.focus();
+    });
+
+    document.getElementById('custom-clear').addEventListener('click', function () {
+      items = []; save(); render(); msg.textContent = '';
+    });
+
+    // quick examples
+    [
+      'g00gle.example', 'paypa1.example/login', 'secure-check.example/verify/account',
+      'login.paypal.com.evil.example', 'http://192.0.2.1/login', 'bit.ly/abc123',
+      'best-offers.xyz', 'vik1ngfile.example', 'javascript:void(0)', 'example.com'
+    ].forEach(function (text) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = text;
+      b.addEventListener('click', function () { input.value = text; input.focus(); });
+      document.getElementById('chips').appendChild(b);
+    });
+
+    load(); render();
+  </script>
+</body>
+</html>
